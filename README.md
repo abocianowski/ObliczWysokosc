@@ -1,4 +1,4 @@
-# ObliczWysokosc
+# Oblicz Wysokość
 Wtyczka do programu Qgis umożliwiająca obliczanie wartości Z dla dodanych punktów oraz obliczanie spadów terenu. Dane NMT do analizy pochodzą z serwisu GUGiK.
 
 Narzędzie jest kompatybilne z wersją Qgis'a od 3.8 wzwyż. Wtyczka umożliwia:
