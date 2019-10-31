@@ -7,3 +7,9 @@ Narzędzie jest kompatybilne z wersją Qgis'a od 3.8 wzwyż. Wtyczka umożliwia:
 - obliczenie spadków terenu dla warstw zawierających obiekty liniowe. Linie zawarte w warstwie zostaną podzielone na sekcje (gęstość przekroju) podane przez użytkownika. Następnie wierzchołki sekcji zostaną wzbogacone o wysokość, dzięki którym obliczone zostaną: spadek terenu, długość 3d i różnica wysokości (punkt początkowy i końcowy).
 
 Wtyczka wykorzystuje API GUGiK dostępne pod adresem: http://services.gugik.gov.pl/nmt/
+
+
+Przykład wykorzystania narzędzia do obliczania punktów:
+<img src="https://github.com/abocianowski/ObliczWysokosc/blob/master/gifs/gif1.gif?raw=true" alt="gif1.gif">
+
+Przykład wykorzystania narzędzia do obliczania spadków terenu:
