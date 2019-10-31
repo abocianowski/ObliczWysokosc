@@ -1,0 +1,20 @@
+<RCC>
+    <qresource prefix="/plugins/ObliczWysokosc/" >
+        <file>icons/cardinal-points.svg</file>
+    </qresource>
+    <qresource prefix="/plugins/ObliczWysokosc/" >
+        <file>icons/mActionDeleteSelected.png</file>
+    </qresource>
+    <qresource prefix="/plugins/ObliczWysokosc/" >
+        <file>icons/mActionEditCopy.svg</file>
+    </qresource>
+    <qresource prefix="/plugins/ObliczWysokosc/" >
+        <file>icons/mActionDeleteTable.svg</file>
+    </qresource>
+    <qresource prefix="/plugins/ObliczWysokosc/" >
+        <file>icons/line-chart.svg</file>
+    </qresource>
+    <qresource prefix="/plugins/ObliczWysokosc/" >
+        <file>icons/mActionRefresh.svg</file>
+    </qresource>
+</RCC>
