@@ -6,10 +6,17 @@ version=0.1
 author=Adrian Bocianowski
 email=adrian@bocianowski.com.pl
 
-about=Wtyczka dzięki API udostępnionemu przez GUGiK umożliwi:
+about=PL:
+	Wtyczka dzięki API udostępnionemu przez GUGiK umożliwi:
     - dodanie punktów z obliczoną wysokością do warstwy tymczasowej
     - skopiowanie obliczonych wysokości wraz z X, Y do schowka 
-    - obliczenie spadków terenu 
+    - obliczenie spadków terenu
+	EN:
+	The plug-in with API provided by GUGiK will allow:
+    - adding points with the calculated height to the temporary layer
+    - copy the calculated heights together with X, Y to the clipboard
+    - calculation of slopes
+	
 
 tracker=https://github.com/abocianowski/ObliczWysokosc/issues
 repository=https://github.com/abocianowski/ObliczWysokosc
