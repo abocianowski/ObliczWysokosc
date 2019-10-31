@@ -13,3 +13,4 @@ Przykład wykorzystania narzędzia do obliczania punktów:
 <img src="https://github.com/abocianowski/ObliczWysokosc/blob/master/gifs/gif1.gif?raw=true" alt="gif1.gif">
 
 Przykład wykorzystania narzędzia do obliczania spadków terenu:
+<img src="https://github.com/abocianowski/ObliczWysokosc/blob/master/gifs/gif2.gif?raw=true" alt="gif2.gif">
