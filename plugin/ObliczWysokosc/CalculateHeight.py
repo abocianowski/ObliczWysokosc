@@ -60,7 +60,7 @@ class CalculateHeight:
         self.pDialog = profileDialog(parent=self.iface.mainWindow())
         self.pDialog.refreshButton.setIcon(QIcon(os.path.join(self.icon_path,'mActionRefresh.svg')))
         self.pDialog.refreshButton.clicked.connect(lambda: self.refreshComboBox(self.pDialog.comboBox, 1))
-        self.pDialog.canel.clicked.connect(self.clickCanelTask)
+        self.pDialog.canel.clicked.connect(self.taskCanceled)
         self.pDialog.close.clicked.connect(self.closeDialog)
         self.pDialog.run.clicked.connect(self.generateProfile)
         self.pDialog.canel.setEnabled(False)
@@ -129,6 +129,38 @@ class CalculateHeight:
                 action)
             self.iface.removeToolBarIcon(action)
 
+    def addMemoryLayer(self, source_layer, sect_length):
+        layer_fields = source_layer.fields()
+
+        output_layer_name = f'Spadek terenu - {sect_length} - GUGiK NMT'
+        output_layer = QgsVectorLayer('LineStringZ?crs=epsg:2180', output_layer_name, 'memory')
+        QgsProject.instance().addMapLayer(output_layer, False)
+        layerTree = self.iface.layerTreeCanvasBridge().rootGroup()
+        layerTree.insertChildNode(0, QgsLayerTreeLayer(output_layer))
+        treeRoot = QgsProject.instance().layerTreeRoot()  
+        if treeRoot.hasCustomLayerOrder():
+            order = treeRoot.customLayerOrder()
+            order.insert(0, order.pop(order.index(QgsProject.instance().mapLayersByName(output_layer_name)[0])))
+            treeRoot.setCustomLayerOrder(order)
+
+        pr = output_layer.dataProvider()
+        att = [i for i in layer_fields]
+
+        roznica_z = QgsField('roznica_z', QVariant.Double)
+        att.append(roznica_z)
+
+        dl_3d = QgsField('dlugosc_3d', QVariant.Double)
+        att.append(dl_3d)
+
+        spadek = QgsField('spadek', QVariant.Double)
+        att.append(spadek)
+
+        pr.addAttributes(att)
+
+        output_layer.updateFields()
+
+        return output_layer
+
     def addPointToLayer(self, x, y, z):
         x = float(x)
         y = float(y)
@@ -188,14 +220,6 @@ class CalculateHeight:
 
     def clearTable(self):
         self.panel.tableWidget.setRowCount(0)
-
-    def clickCanelTask(self):
-        self.pTask.stopTaks = True
-        self.pTask.terminate()
-        QMessageBox.warning(None,'Zatrzymanie procesu', 'Proces generowania spadku terenu został zatrzymany.')
-        self.pDialog.run.setEnabled(True)
-        self.pDialog.canel.setEnabled(False)
-        self.pDialog.progressBar.setValue(0)
 
     def clickProfleButon(self):
         self.pDialog.show()
@@ -258,13 +282,30 @@ class CalculateHeight:
             QMessageBox.warning(None,'Brak obiektów', 'Brak odcinków w selekcji')
             return
 
-        self.pTask = profileTool(self.iface, layer, self.pDialog.onlySelected.isChecked(), self.pDialog.spinBox.value(), self.plugin_dir)
+        try:
+            self.dest_profile_layer = self.addMemoryLayer(layer, str(self.pDialog.spinBox.value()) + ' [m]')
+        except:
+            QMessageBox.warning(None,'Brakująca warstwa wejściowa', 'Wskazana warstwa wejściowa nie istnieje (prawdopodobnie została usunięta)')
+            self.refreshComboBox(self.pDialog.comboBox, 1)
+            return
+
+        self.dest_profile_layer.loadNamedStyle(os.path.join(self.plugin_dir,'layer_style2.qml'), True)
+
+        self.pTask = profileTool(layer, self.pDialog.onlySelected.isChecked(), self.pDialog.spinBox.value())
+               
         self.pTask.progress.connect(self.pDialog.progressBar.setValue)
         self.pTask.end.connect(self.taskFinished)
         self.pTask.error.connect(self.taskError)
+        self.pTask.add_feature.connect(self.taskAddFeature)
+
         self.pTask.start()
+        
         self.pDialog.run.setEnabled(False)
         self.pDialog.canel.setEnabled(True)
+        self.pDialog.comboBox.setEnabled(False)
+        self.pDialog.spinBox.setEnabled(False)
+        self.pDialog.onlySelected.setEnabled(False)
+        self.pDialog.refreshButton.setEnabled(False)
 
     def refreshComboBox(self, combo, geometry_type):
         combo.clear()
@@ -283,12 +324,40 @@ class CalculateHeight:
         self.pDialog.run.setEnabled(True)
         self.pDialog.canel.setEnabled(False)
         self.pDialog.progressBar.setValue(0)
+        self.pDialog.comboBox.setEnabled(True)
+        self.pDialog.spinBox.setEnabled(True)
+        self.pDialog.onlySelected.setEnabled(True)
+        self.pDialog.refreshButton.setEnabled(True)
+
+    def taskCanceled(self):
+        self.pTask.stopTaks = True
+        self.pTask.terminate()
+        QMessageBox.warning(None,'Zatrzymanie procesu', 'Proces generowania spadku terenu został zatrzymany.')
+        self.pDialog.run.setEnabled(True)
+        self.pDialog.canel.setEnabled(False)
+        self.pDialog.progressBar.setValue(0)
+        self.pDialog.comboBox.setEnabled(True)
+        self.pDialog.spinBox.setEnabled(True)
+        self.pDialog.onlySelected.setEnabled(True)
+        self.pDialog.refreshButton.setEnabled(True)
 
     def taskFinished(self):
         self.pDialog.run.setEnabled(True)
         self.pDialog.canel.setEnabled(False)
         QMessageBox.information(self.iface.mainWindow(),'Spadek terenu', 'Proces generowania został zakończony')
         self.pDialog.progressBar.setValue(0)
+        self.pDialog.comboBox.setEnabled(True)
+        self.pDialog.spinBox.setEnabled(True)
+        self.pDialog.onlySelected.setEnabled(True)
+        self.pDialog.refreshButton.setEnabled(True)
+        
+        self.pTask.quit()
+        self.pTask.wait()
+
+    def taskAddFeature(self,feature):
+        self.dest_profile_layer.startEditing()
+        self.dest_profile_layer.addFeature(feature)
+        self.dest_profile_layer.commitChanges()
 
 class canvasTool(QgsMapToolEmitPoint):
     clicked = pyqtSignal(list)
@@ -334,33 +403,27 @@ class profileTool(QThread):
     progress = pyqtSignal(int)
     end = pyqtSignal()
     error = pyqtSignal()
+    add_feature = pyqtSignal(object)
 
-    def __init__(self, iface, layer, only_selected, distance, plugin_dir):
+    def __init__(self, source_layer, only_selected, distance):
         QThread.__init__(self)
-        self.iface = iface
-        self.layer = layer
+        self.source_layer = source_layer
         self.only_selected = only_selected
         self.distance = distance
-        self.plugin_dir = plugin_dir
         self.stopTask = False
     
-    def run(self):
-        layer = self.layer
-        new_layer = self.addMemoryLayer(layer, str(self.distance) + ' [m]')
-        new_layer.loadNamedStyle(os.path.join(self.plugin_dir,'layer_style2.qml'), True)
-        
+    def run(self):    
         f_count = 0
         
         if self.only_selected:
-            f_count += len(layer.selectedFeatures())
-            features = [i for i in layer.selectedFeatures()]
-
+            f_count += len(self.source_layer.selectedFeatures())
+            features = [i for i in self.source_layer.selectedFeatures()]
         else:
-            f_count += layer.featureCount()
-            features = [i for i in layer.getFeatures()]
-
+            f_count += self.source_layer.featureCount()
+            features = [i for i in self.source_layer.getFeatures()]
         i = 0
         prg = 0
+
         for f in features:
             f_geom = f.geometry()
 
@@ -369,6 +432,7 @@ class profileTool(QThread):
                 part_geom_sections = self.generateSections(part_geom, self.distance)
                 part_geom_sections_len = len(part_geom_sections)
                 i2 = 0
+
                 for pgs in part_geom_sections:
                     if not self.stopTask:
                         att = f.attributes()
@@ -377,7 +441,6 @@ class profileTool(QThread):
                             self.error.emit()
                             return
                         feature = QgsFeature()
-
                         v_lst = [i for i in geom_z.vertices()]
 
                         # roznica_z
@@ -389,22 +452,18 @@ class profileTool(QThread):
                         dl_3d = [dl_3d[i].distance(dl_3d[i+1])  for i,e in enumerate(dl_3d[:-1])]
                         dl_3d = round(sum(dl_3d),2)
                         att.append(dl_3d)
-
                         # spadek
                         spadek = round((z_diff/dl_3d) * 100,2)
                         att.append(spadek)
                         
                         feature.setAttributes(att)
-
                         feature.setGeometry(geom_z)
-                        new_layer.startEditing()
-
-                        new_layer.addFeature(feature)
-                        new_layer.commitChanges()
+                        self.add_feature.emit(feature)
 
                         i2 += 1
                         prg2 = ((i2 / part_geom_sections_len / f_count) * 100) + prg
-                        self.progress.emit(prg2)
+                        if (prg2 - prg) > 1:
+                            self.progress.emit(prg2)
                     else:
                         return
             i += 1
@@ -412,38 +471,6 @@ class profileTool(QThread):
             self.progress.emit(prg)
 
         self.end.emit()
-
-    def addMemoryLayer(self, source_layer, sect_length):
-        layer_fields = source_layer.fields()
-
-        output_layer_name = f'Spadek terenu - {sect_length} - GUGiK NMT'
-        output_layer = QgsVectorLayer('LineStringZ?crs=epsg:2180', output_layer_name, 'memory')
-        QgsProject.instance().addMapLayer(output_layer, False)
-        layerTree = self.iface.layerTreeCanvasBridge().rootGroup()
-        layerTree.insertChildNode(0, QgsLayerTreeLayer(output_layer))
-        treeRoot = QgsProject.instance().layerTreeRoot()  
-        if treeRoot.hasCustomLayerOrder():
-            order = treeRoot.customLayerOrder()
-            order.insert(0, order.pop(order.index(QgsProject.instance().mapLayersByName(output_layer_name)[0])))
-            treeRoot.setCustomLayerOrder(order)
-
-        pr = output_layer.dataProvider()
-        att = [i for i in layer_fields]
-
-        roznica_z = QgsField('roznica_z', QVariant.Double)
-        att.append(roznica_z)
-
-        dl_3d = QgsField('dlugosc_3d', QVariant.Double)
-        att.append(dl_3d)
-
-        spadek = QgsField('spadek', QVariant.Double)
-        att.append(spadek)
-
-        pr.addAttributes(att)
-
-        output_layer.updateFields()
-
-        return output_layer
 
     def addZvalue(self, geometry):
         geom_list = []

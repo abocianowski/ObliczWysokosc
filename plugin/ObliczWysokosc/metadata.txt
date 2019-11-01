@@ -1,27 +1,30 @@
 [general]
 name=Oblicz wysokość (GUGiK NMT)
 qgisMinimumVersion=3.8.0
-description=Oblicza wysokość punktów i spadek terenu na podstawie API GUGiK. EN: Only for Polish users - allows calculating the height using the GUGiK API
-version=0.1
+description=Oblicza wysokość punktów i spadek terenu na podstawie API GUGiK. EN: Only for Polish users - allows calculating the height using the GUGiK API. The service coverage area is available only within the administrative borders of Poland.
+version=0.2
 author=Adrian Bocianowski
 email=adrian@bocianowski.com.pl
 
 about=PL:
-	Wtyczka dzięki API udostępnionemu przez GUGiK umożliwi:
+    Wtyczka dzięki API udostępnionemu przez GUGiK umożliwi:
     - dodanie punktów z obliczoną wysokością do warstwy tymczasowej
-    - skopiowanie obliczonych wysokości wraz z X, Y do schowka 
+    - skopiowanie obliczonych wysokości wraz z X, Y do schowka
     - obliczenie spadków terenu
-	EN:
-	The plug-in with API provided by GUGiK will allow:
+    EN:
+    The plug-in with API provided by GUGiK will allow:
     - adding points with the calculated height to the temporary layer
     - copy the calculated heights together with X, Y to the clipboard
     - calculation of slopes
+    The service coverage area is available only within the administrative borders of Poland.
 	
-
 tracker=https://github.com/abocianowski/ObliczWysokosc/issues
 repository=https://github.com/abocianowski/ObliczWysokosc
 
  changelog:
+    version=0.2 (2019-11-01):
+        * naprawa błędu wystepującego podczas uruchamiania narzędzia do generowania spadków/ repair Qgis crashed before run profile tool
+        * literówka w oknie obliczania spadków/ typo in dialog title name
     version=0.1 (2019-10-31):
         * plugin create
 
