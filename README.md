@@ -6,6 +6,10 @@ Narzędzie jest kompatybilne z wersją Qgis'a od 3.8 wzwyż. Wtyczka umożliwia:
 - zapisywanie przechwyconych wysokości i współrzędnych punktów w dokowalnym widgecie. Dane mogą być skopiowane do schowka przy użyciu narzędzia do kopiowania i wykorzystane w innych aplikacjach,
 - obliczenie spadków terenu dla warstw zawierających obiekty liniowe. Linie zawarte w warstwie zostaną podzielone na sekcje (gęstość przekroju) podane przez użytkownika. Następnie wierzchołki sekcji zostaną wzbogacone o wysokość, dzięki którym obliczone zostaną: spadek terenu, długość 3d i różnica wysokości (punkt początkowy i końcowy).
 
+Spadek terenu (sin(α) = Δh/l) jest liczony na podstawie stosunku zmiany wysokości Δh, mierzonej w dwóch punktach sekcji (podzielonego odcinka) , do odległości l między nimi, mierzonej wzdłuż trasy: 
+
+<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Grade_dimension.svg/400px-Grade_dimension.svg.png" alt="400px-Grade_dimension.svg">
+
 Wtyczka wykorzystuje API GUGiK dostępne pod adresem: http://services.gugik.gov.pl/nmt/
 
 
