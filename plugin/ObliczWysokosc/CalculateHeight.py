@@ -509,9 +509,9 @@ class profileTool(QThread):
         return geom_list
 
 def getRequests(point):
-    url = f'http://services.gugik.gov.pl/nmt/?request=GetHbyXY&x={point[1]}&y={point[0]}'
+    url = f'https://services.gugik.gov.pl/nmt/?request=GetHbyXY&x={point[1]}&y={point[0]}'
     try:
-        req = requests.get(url, timeout=10)
+        req = requests.get(url, timeout=300)
     except:
         return False
 
