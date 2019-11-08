@@ -19,7 +19,7 @@ from PyQt5 import uic
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction, QMessageBox, QTableWidgetItem, QAbstractItemView, QApplication, QMessageBox
-from PyQt5.QtCore import QCoreApplication, Qt, pyqtSignal, QThread, QVariant
+from PyQt5.QtCore import QCoreApplication, Qt, pyqtSignal, QThread, QVariant, QSettings
 
 from qgis.gui import QgsMapToolEmitPoint
 from qgis.core import QgsGeometry, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject, QgsVectorLayer, QgsLayerTreeLayer, QgsFeature, QgsPoint, QgsField, QgsLineString, QgsVector3D 
@@ -29,8 +29,21 @@ class CalculateHeight:
         self.iface = iface
         self.canvas = iface.mapCanvas()
         self.plugin_dir = os.path.dirname(__file__)
+        locale = QSettings().value('locale/userLocale')[0:2]
+        locale_path = os.path.join(
+            self.plugin_dir,
+            'i18n',
+            'QScan_{}.qm'.format(locale))
+
+        if os.path.exists(locale_path):
+            self.translator = QTranslator()
+            self.translator.load(locale_path)
+
+            if qVersion() > '4.3.3':
+                QCoreApplication.installTranslator(self.translator)
 
         self.actions = []
+        self.menu = self.tr(u'&Oblicz wysokość (GUGiK NMT)')
         self.icon_path = ':/plugins/ObliczWysokosc/icons/'
 
         self.qgsProject = QgsProject.instance()
@@ -65,6 +78,8 @@ class CalculateHeight:
         self.pDialog.run.clicked.connect(self.generateProfile)
         self.pDialog.canel.setEnabled(False)
 
+        self.first_start = None
+
     def tr(self, message):
         return QCoreApplication.translate('Oblicz wysokosc (GUGiK NMT)', message)
 
@@ -74,6 +89,7 @@ class CalculateHeight:
         text,
         callback,
         enabled_flag=True,
+        add_to_menu=True,
         add_to_toolbar=True,
         status_tip=None,
         whats_this=None,
@@ -92,6 +108,11 @@ class CalculateHeight:
             action.setWhatsThis(whats_this)
         if add_to_toolbar:
             self.toolsToolbar.addAction(action)
+        if add_to_menu:
+            self.iface.addPluginToMenu(
+                self.menu,
+                action
+                )
         if checkable:
             action.setCheckable(True)
         if checked:
@@ -110,7 +131,8 @@ class CalculateHeight:
             os.path.join(self.icon_path,'cardinal-points.svg'),
             'Oblicz wysokość',
             self.clickGetHeightButton,
-            checkable=True
+            checkable=True,
+            parent=self.iface.mainWindow(),
             )
         self.tool.action = self.captureButton
 
@@ -119,8 +141,12 @@ class CalculateHeight:
             os.path.join(self.icon_path,'line-chart.svg'),
             'Oblicz spadek terenu',
             self.clickProfleButon,
-            checkable=False
+            checkable=False,
+            parent=self.iface.mainWindow(),
             )
+
+        if self.first_start == True:
+            self.first_start = False
 
     def unload(self):
         for action in self.actions:
@@ -195,18 +221,18 @@ class CalculateHeight:
 
     def capturePoint(self,point):
         res = getRequests(point)
-        if res != False:
+        if res[0] != False:
             rows = self.panel.tableWidget.rowCount()
             self.panel.tableWidget.setRowCount(rows + 1)
             self.panel.tableWidget.setItem(rows,0, QTableWidgetItem(str(round(point[0],2))))
             self.panel.tableWidget.setItem(rows,1, QTableWidgetItem(str(round(point[1],2))))
-            self.panel.tableWidget.setItem(rows,2, QTableWidgetItem(str(res)))
+            self.panel.tableWidget.setItem(rows,2, QTableWidgetItem(str(res[1])))
             self.panel.tableWidget.selectRow(rows)
 
             if self.panel.checkBox.isChecked():
-                self.addPointToLayer(point[0],point[1],res)
+                self.addPointToLayer(point[0],point[1],res[1])
         else:
-            QMessageBox.warning(None,'Błąd połączenia', 'Wystąpił błąd podczas pobierania danych. Sprawdź połączenie internetowe.')
+            QMessageBox.warning(None,res[1][0], res[1][1])
     
     def clearLayer(self):
         name = 'Obliczone wysokości - GUGiK NMT'
@@ -317,10 +343,10 @@ class CalculateHeight:
             for i in self.lineLayers:
                 combo.addItem(i.name())  
 
-    def taskError(self):
+    def taskError(self,e):
         self.pTask.stopTaks = True
         self.pTask.terminate()
-        QMessageBox.warning(None,'Błąd podczas pobierania danych', 'Wystąpił błąd podczas pobierania danych. Sprawdź połączenie interentowe.')
+        QMessageBox.warning(None,e[0], e[1])
         self.pDialog.run.setEnabled(True)
         self.pDialog.canel.setEnabled(False)
         self.pDialog.progressBar.setValue(0)
@@ -402,7 +428,7 @@ class canvasTool(QgsMapToolEmitPoint):
 class profileTool(QThread):
     progress = pyqtSignal(int)
     end = pyqtSignal()
-    error = pyqtSignal()
+    error = pyqtSignal(list)
     add_feature = pyqtSignal(object)
 
     def __init__(self, source_layer, only_selected, distance):
@@ -437,11 +463,11 @@ class profileTool(QThread):
                     if not self.stopTask:
                         att = f.attributes()
                         geom_z = self.addZvalue(pgs)
-                        if geom_z == False:
-                            self.error.emit()
+                        if geom_z[0] == False:
+                            self.error.emit(geom_z[1])
                             return
                         feature = QgsFeature()
-                        v_lst = [i for i in geom_z.vertices()]
+                        v_lst = [i for i in geom_z[1].vertices()]
 
                         # roznica_z
                         z_diff= round(abs(v_lst[0].z() - v_lst[-1].z()),2)
@@ -457,7 +483,7 @@ class profileTool(QThread):
                         att.append(spadek)
                         
                         feature.setAttributes(att)
-                        feature.setGeometry(geom_z)
+                        feature.setGeometry(geom_z[1])
                         self.add_feature.emit(feature)
 
                         i2 += 1
@@ -477,14 +503,14 @@ class profileTool(QThread):
         for v in geometry.vertices():
             x = float(v.x())
             y = float(v.y())
-            z = float(getRequests([x,y]))
-            if z == False:
-                return False
-            point = QgsPoint(x, y, z)
+            z = getRequests([x,y])
+            if z[0] == False:
+                return False,z[1]
+            point = QgsPoint(x, y, float(z[1]))
             geom_list.append(point)
 
         geom = QgsGeometry.fromPolyline(geom_list)
-        return geom
+        return True, geom
 
     def generateSections(self, geometry, distance):
         geom_length = geometry.length()
@@ -511,14 +537,14 @@ class profileTool(QThread):
 def getRequests(point):
     url = f'https://services.gugik.gov.pl/nmt/?request=GetHbyXY&x={point[1]}&y={point[0]}'
     try:
-        req = requests.get(url, timeout=300)
+        req = requests.get(url, timeout=120)
     except:
-        return False
+        return False,['Błąd połączenia', 'Upłynął limit czasu oczekiwania na dane lub serwer nie odpowiada']
 
     if req.status_code == 200:
-        return req.text
+        return True, req.text
     else:
-        return False
+        return False,['Błąd połączenia', 'Wystąpił błąd podczas pobierania danych. Sprawdź połączenie internetowe']
 
 LEFT_PANEL, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__),'qt','leftPanel.ui'))
 PROFILE_DIALOG, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__),'qt','calculate_decrease.ui'))
