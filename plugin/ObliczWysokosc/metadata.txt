@@ -2,7 +2,7 @@
 name=Oblicz wysokość (GUGiK NMT)
 qgisMinimumVersion=3.8.0
 description=Oblicza wysokość punktów i spadek terenu na podstawie API GUGiK. EN: Only for Polish users - allows calculating the height using the GUGiK API. The service coverage area is available only within the administrative borders of Poland.
-version=0.4
+version=0.5
 author=Adrian Bocianowski
 email=adrian@bocianowski.com.pl
 
@@ -22,6 +22,8 @@ tracker=https://github.com/abocianowski/ObliczWysokosc/issues
 repository=https://github.com/abocianowski/ObliczWysokosc
 
 changelog:
+    version=0.5 (2019-11-19):
+        * repair bug with division by 0/ naprawa błędu z dzieleniem przez 0
     version=0.4 (2019-11-08):
         * możliwość dodania skrótu/ the ability to add a shortcut
     version=0.3 (2019-11-05):

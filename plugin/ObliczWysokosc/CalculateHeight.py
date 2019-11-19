@@ -479,6 +479,8 @@ class profileTool(QThread):
                         dl_3d = round(sum(dl_3d),2)
                         att.append(dl_3d)
                         # spadek
+                        if dl_3d == 0:
+                            continue
                         spadek = round((z_diff/dl_3d) * 100,2)
                         att.append(spadek)
                         
