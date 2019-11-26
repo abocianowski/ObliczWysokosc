@@ -22,7 +22,7 @@ from PyQt5.QtWidgets import QAction, QMessageBox, QTableWidgetItem, QAbstractIte
 from PyQt5.QtCore import QCoreApplication, Qt, pyqtSignal, QThread, QVariant, QSettings
 
 from qgis.gui import QgsMapToolEmitPoint
-from qgis.core import QgsGeometry, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject, QgsVectorLayer, QgsLayerTreeLayer, QgsFeature, QgsPoint, QgsField, QgsLineString, QgsVector3D 
+from qgis.core import QgsGeometry, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject, QgsVectorLayer, QgsLayerTreeLayer, QgsFeature, QgsPoint, QgsField, QgsLineString, QgsVector3D, QgsMapLayerType
 
 class CalculateHeight:
     def __init__(self, iface):
@@ -290,7 +290,7 @@ class CalculateHeight:
         layers = []
         for l in self.qgsProject.mapLayers():
             layer = self.qgsProject.mapLayer(l)
-            if layer.type() == 0: # 0 = vector layer
+            if layer.type() == QgsMapLayerType.VectorLayer:
                 if layer.geometryType() == geometry_type:
                     layers.append(layer)
         return layers
