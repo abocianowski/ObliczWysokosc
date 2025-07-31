@@ -411,7 +411,7 @@ class CalculateHeight:
 
         # Stop the background task thread if it's still running
         try:
-            if hasattr(self, "pTask") and self.pTask.isRunning():
+            if self.pTask.isRunning():
                 self.pTask.stopTask = True
                 self.pTask.quit()
                 self.pTask.wait()
@@ -420,7 +420,7 @@ class CalculateHeight:
             pass
 
         # Close and delete the profile dialog if it's open
-        if hasattr(self, "pDialog") and self.profileDialog.isVisible():
+        if self.profileDialog.isVisible():
             self.profileDialog.close()
             self.profileDialog.deleteLater()
             self.profileDialog = None
