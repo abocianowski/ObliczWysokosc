@@ -7,7 +7,8 @@
 #   (at your option) any later version.                                     *
 # ***************************************************************************
 #     begin                : 2019-10-28                                     *
-#     copyright            : (C) 2019 by Adrian Bocianowski                 *
+#     updated              : 2025-07-31                                     *
+#     copyright            : (C) 2025 by Adrian Bocianowski                 *
 #     email                : adrian at bocianowski.com.pl                   *
 # ***************************************************************************
 
