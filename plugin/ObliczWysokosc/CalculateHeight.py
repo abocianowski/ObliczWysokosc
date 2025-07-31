@@ -12,19 +12,25 @@
 #     email                : adrian at bocianowski.com.pl                   *
 # ***************************************************************************
 
-from .resources import *
-import requests
 import os
+import requests
 
-from PyQt5 import uic
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import QCoreApplication, Qt, pyqtSignal, QThread, QVariant, QSettings
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction, QMessageBox, QTableWidgetItem, QAbstractItemView, QApplication, QMessageBox
-from PyQt5.QtCore import QCoreApplication, Qt, pyqtSignal, QThread, QVariant, QSettings
 
+from qgis.core import (
+    QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsFeature,
+    QgsField, QgsGeometry, QgsLayerTreeLayer, QgsMapLayerType, QgsPoint,
+    QgsProject, QgsVector3D, QgsVectorLayer
+)
 from qgis.gui import QgsMapToolEmitPoint
-from qgis.core import QgsGeometry, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsProject, QgsVectorLayer, QgsLayerTreeLayer, QgsFeature, QgsPoint, QgsField, QgsLineString, QgsVector3D, QgsMapLayerType
 
+from .resources import *
+
+LEFT_PANEL, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__),'qt','leftPanel.ui'))
+PROFILE_DIALOG, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__),'qt','calculate_decrease.ui'))
 class CalculateHeight:
     def __init__(self, iface):
         self.iface = iface
@@ -63,7 +69,7 @@ class CalculateHeight:
         self.panel.clearLayer.setIcon(QIcon(os.path.join(self.icon_path,'mActionDeleteSelected.png')))
         self.panel.clearLayer.clicked.connect(self.clearLayer)
         
-        self.tool = canvasTool(self.iface,self.canvas)
+        self.tool = CanvasTool(self.iface,self.canvas)
         self.tool.clicked.connect(self.capturePoint)
         self.tool.deact.connect(self.panel.hide)
 
@@ -71,7 +77,7 @@ class CalculateHeight:
 
         self.panel.hide()
 
-        self.pDialog = profileDialog(parent=self.iface.mainWindow())
+        self.pDialog = ProfileDialog(parent=self.iface.mainWindow())
         self.pDialog.refreshButton.setIcon(QIcon(os.path.join(self.icon_path,'mActionRefresh.svg')))
         self.pDialog.refreshButton.clicked.connect(lambda: self.refreshComboBox(self.pDialog.comboBox, 1))
         self.pDialog.canel.clicked.connect(self.taskCanceled)
@@ -318,7 +324,7 @@ class CalculateHeight:
 
         self.dest_profile_layer.loadNamedStyle(os.path.join(self.plugin_dir,'layer_style2.qml'), True)
 
-        self.pTask = profileTool(layer, self.pDialog.onlySelected.isChecked(), self.pDialog.spinBox.value())
+        self.pTask = ProfileTool(layer, self.pDialog.onlySelected.isChecked(), self.pDialog.spinBox.value())
                
         self.pTask.progress.connect(self.pDialog.progressBar.setValue)
         self.pTask.end.connect(self.taskFinished)
@@ -386,7 +392,7 @@ class CalculateHeight:
         self.dest_profile_layer.addFeature(feature)
         self.dest_profile_layer.commitChanges()
 
-class canvasTool(QgsMapToolEmitPoint):
+class CanvasTool(QgsMapToolEmitPoint):
     clicked = pyqtSignal(list)
     deact = pyqtSignal()
 
@@ -426,7 +432,23 @@ class canvasTool(QgsMapToolEmitPoint):
         geometry.transform(crs2crs)
         return geometry
 
-class profileTool(QThread):
+class LeftPanel(QtWidgets.QDockWidget, LEFT_PANEL):
+    closingPanel = pyqtSignal()
+
+    def __init__(self, parent=None):
+        super(LeftPanel, self).__init__(parent)
+        self.setupUi(self)
+
+    def closeEvent(self, event):
+        self.closingPanel.emit()
+        event.accept()
+
+class ProfileDialog(QtWidgets.QDialog, PROFILE_DIALOG):
+    def __init__(self, parent=None):
+        super(ProfileDialog, self).__init__(parent)
+        self.setupUi(self)
+
+class ProfileTool(QThread):
     progress = pyqtSignal(int)
     end = pyqtSignal()
     error = pyqtSignal(list)
@@ -548,22 +570,3 @@ def getRequests(point):
         return True, req.text
     else:
         return False,['Błąd połączenia', 'Wystąpił błąd podczas pobierania danych. Sprawdź połączenie internetowe']
-
-LEFT_PANEL, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__),'qt','leftPanel.ui'))
-PROFILE_DIALOG, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__),'qt','calculate_decrease.ui'))
-
-class leftPanel(QtWidgets.QDockWidget, LEFT_PANEL):
-    closingPanel = pyqtSignal()
-
-    def __init__(self, parent=None):
-        super(leftPanel, self).__init__(parent)
-        self.setupUi(self)
-
-    def closeEvent(self, event):
-        self.closingPanel.emit()
-        event.accept()
-
-class profileDialog(QtWidgets.QDialog, PROFILE_DIALOG):
-    def __init__(self, parent=None):
-        super(profileDialog, self).__init__(parent)
-        self.setupUi(self)
