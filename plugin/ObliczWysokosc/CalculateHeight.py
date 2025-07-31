@@ -77,13 +77,13 @@ class CalculateHeight:
 
         self.panel.hide()
 
-        self.pDialog = ProfileDialog(parent=self.iface.mainWindow())
-        self.pDialog.refreshButton.setIcon(QIcon(os.path.join(self.icon_path,'mActionRefresh.svg')))
-        self.pDialog.refreshButton.clicked.connect(lambda: self.refreshComboBox(self.pDialog.comboBox, 1))
-        self.pDialog.canel.clicked.connect(self.taskCanceled)
-        self.pDialog.close.clicked.connect(self.closeDialog)
-        self.pDialog.run.clicked.connect(self.generateProfile)
-        self.pDialog.canel.setEnabled(False)
+        self.profileDialog = ProfileDialog(parent=self.iface.mainWindow())
+        self.profileDialog.refreshButton.setIcon(QIcon(os.path.join(self.icon_path,'mActionRefresh.svg')))
+        self.profileDialog.refreshButton.clicked.connect(lambda: self.refreshComboBox(self.profileDialog.comboBox, 1))
+        self.profileDialog.canel.clicked.connect(self.taskCanceled)
+        self.profileDialog.close.clicked.connect(self.closeDialog)
+        self.profileDialog.run.clicked.connect(self.generateProfile)
+        self.profileDialog.canel.setEnabled(False)
 
         self.first_start = None
 
@@ -223,8 +223,8 @@ class CalculateHeight:
         self.panel.tableWidget.setRowCount(0)
 
     def clickProfleButon(self):
-        self.pDialog.show()
-        self.refreshComboBox(self.pDialog.comboBox, 1)
+        self.profileDialog.show()
+        self.refreshComboBox(self.profileDialog.comboBox, 1)
 
     def clickGetHeightButton(self):
         if self.captureButton.isChecked():
@@ -243,10 +243,10 @@ class CalculateHeight:
         except:
             pass
 
-        self.pDialog.run.setEnabled(True)
-        self.pDialog.canel.setEnabled(False)
-        self.pDialog.hide()
-        self.pDialog.progressBar.setValue(0)
+        self.profileDialog.run.setEnabled(True)
+        self.profileDialog.canel.setEnabled(False)
+        self.profileDialog.hide()
+        self.profileDialog.progressBar.setValue(0)
 
     def copyToClipboard(self):
         tmp = ''
@@ -271,7 +271,7 @@ class CalculateHeight:
         return layers
 
     def generateProfile(self):
-        l_idx = self.pDialog.comboBox.currentIndex()
+        l_idx = self.profileDialog.comboBox.currentIndex()
 
         if l_idx == 0:
             QMessageBox.warning(None,'Brak warstwy', 'Wybierz warstwę źródłową')
@@ -279,34 +279,34 @@ class CalculateHeight:
         
         layer = self.lineLayers[l_idx - 1]
 
-        if self.pDialog.onlySelected.isChecked() and len(layer.selectedFeatures()) == 0:
+        if self.profileDialog.onlySelected.isChecked() and len(layer.selectedFeatures()) == 0:
             QMessageBox.warning(None,'Brak obiektów', 'Brak odcinków w selekcji')
             return
 
         try:
-            self.dest_profile_layer = self.addMemoryLayer(layer, str(self.pDialog.spinBox.value()) + ' [m]')
+            self.dest_profile_layer = self.addMemoryLayer(layer, str(self.profileDialog.spinBox.value()) + ' [m]')
         except:
             QMessageBox.warning(None,'Brakująca warstwa wejściowa', 'Wskazana warstwa wejściowa nie istnieje (prawdopodobnie została usunięta)')
-            self.refreshComboBox(self.pDialog.comboBox, 1)
+            self.refreshComboBox(self.profileDialog.comboBox, 1)
             return
 
         self.dest_profile_layer.loadNamedStyle(os.path.join(self.plugin_dir,'layer_style2.qml'), True)
 
-        self.pTask = ProfileTool(layer, self.pDialog.onlySelected.isChecked(), self.pDialog.spinBox.value())
+        self.pTask = ProfileTool(layer, self.profileDialog.onlySelected.isChecked(), self.profileDialog.spinBox.value())
                
-        self.pTask.progress.connect(self.pDialog.progressBar.setValue)
+        self.pTask.progress.connect(self.profileDialog.progressBar.setValue)
         self.pTask.end.connect(self.taskFinished)
         self.pTask.error.connect(self.taskError)
         self.pTask.add_feature.connect(self.taskAddFeature)
 
         self.pTask.start()
         
-        self.pDialog.run.setEnabled(False)
-        self.pDialog.canel.setEnabled(True)
-        self.pDialog.comboBox.setEnabled(False)
-        self.pDialog.spinBox.setEnabled(False)
-        self.pDialog.onlySelected.setEnabled(False)
-        self.pDialog.refreshButton.setEnabled(False)
+        self.profileDialog.run.setEnabled(False)
+        self.profileDialog.canel.setEnabled(True)
+        self.profileDialog.comboBox.setEnabled(False)
+        self.profileDialog.spinBox.setEnabled(False)
+        self.profileDialog.onlySelected.setEnabled(False)
+        self.profileDialog.refreshButton.setEnabled(False)
 
     def initGui(self):
         self.first_start = True
@@ -347,35 +347,35 @@ class CalculateHeight:
         self.pTask.stopTaks = True
         self.pTask.terminate()
         QMessageBox.warning(None,e[0], e[1])
-        self.pDialog.run.setEnabled(True)
-        self.pDialog.canel.setEnabled(False)
-        self.pDialog.progressBar.setValue(0)
-        self.pDialog.comboBox.setEnabled(True)
-        self.pDialog.spinBox.setEnabled(True)
-        self.pDialog.onlySelected.setEnabled(True)
-        self.pDialog.refreshButton.setEnabled(True)
+        self.profileDialog.run.setEnabled(True)
+        self.profileDialog.canel.setEnabled(False)
+        self.profileDialog.progressBar.setValue(0)
+        self.profileDialog.comboBox.setEnabled(True)
+        self.profileDialog.spinBox.setEnabled(True)
+        self.profileDialog.onlySelected.setEnabled(True)
+        self.profileDialog.refreshButton.setEnabled(True)
 
     def taskCanceled(self):
         self.pTask.stopTaks = True
         self.pTask.terminate()
         QMessageBox.warning(None,'Zatrzymanie procesu', 'Proces generowania spadku terenu został zatrzymany.')
-        self.pDialog.run.setEnabled(True)
-        self.pDialog.canel.setEnabled(False)
-        self.pDialog.progressBar.setValue(0)
-        self.pDialog.comboBox.setEnabled(True)
-        self.pDialog.spinBox.setEnabled(True)
-        self.pDialog.onlySelected.setEnabled(True)
-        self.pDialog.refreshButton.setEnabled(True)
+        self.profileDialog.run.setEnabled(True)
+        self.profileDialog.canel.setEnabled(False)
+        self.profileDialog.progressBar.setValue(0)
+        self.profileDialog.comboBox.setEnabled(True)
+        self.profileDialog.spinBox.setEnabled(True)
+        self.profileDialog.onlySelected.setEnabled(True)
+        self.profileDialog.refreshButton.setEnabled(True)
 
     def taskFinished(self):
-        self.pDialog.run.setEnabled(True)
-        self.pDialog.canel.setEnabled(False)
+        self.profileDialog.run.setEnabled(True)
+        self.profileDialog.canel.setEnabled(False)
         QMessageBox.information(self.iface.mainWindow(),'Spadek terenu', 'Proces generowania został zakończony')
-        self.pDialog.progressBar.setValue(0)
-        self.pDialog.comboBox.setEnabled(True)
-        self.pDialog.spinBox.setEnabled(True)
-        self.pDialog.onlySelected.setEnabled(True)
-        self.pDialog.refreshButton.setEnabled(True)
+        self.profileDialog.progressBar.setValue(0)
+        self.profileDialog.comboBox.setEnabled(True)
+        self.profileDialog.spinBox.setEnabled(True)
+        self.profileDialog.onlySelected.setEnabled(True)
+        self.profileDialog.refreshButton.setEnabled(True)
         
         self.pTask.quit()
         self.pTask.wait()
