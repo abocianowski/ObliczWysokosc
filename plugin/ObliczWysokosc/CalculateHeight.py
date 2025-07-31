@@ -155,13 +155,6 @@ class CalculateHeight:
         if self.first_start == True:
             self.first_start = False
 
-    def unload(self):
-        for action in self.actions:
-            self.iface.removePluginMenu(
-                self.tr(u'&Oblicz wysokość'),
-                action)
-            self.iface.removeToolBarIcon(action)
-
     def addMemoryLayer(self, source_layer, sect_length):
         layer_fields = source_layer.fields()
 
@@ -391,6 +384,46 @@ class CalculateHeight:
         self.dest_profile_layer.startEditing()
         self.dest_profile_layer.addFeature(feature)
         self.dest_profile_layer.commitChanges()
+
+    def unload(self):
+        # Unset the map tool if it's currently active
+        if self.canvas.mapTool() == self.tool:
+            self.canvas.unsetMapTool(self.tool)
+
+        # Remove and delete the dock panel
+        if self.panel:
+            self.iface.removeDockWidget(self.panel)
+            self.panel.deleteLater()
+            self.panel = None
+
+        # Remove all actions from the menu and toolbar
+        for action in self.actions:
+            self.iface.removePluginMenu(self.menu, action)
+            self.iface.removeToolBarIcon(action)
+        
+        self.actions = []
+
+        # Remove and delete the toolbar
+        if self.toolsToolbar:
+            self.iface.mainWindow().removeToolBar(self.toolsToolbar)
+            self.toolsToolbar.deleteLater()
+            self.toolsToolbar = None
+
+        # Stop the background task thread if it's still running
+        try:
+            if hasattr(self, "pTask") and self.pTask.isRunning():
+                self.pTask.stopTask = True
+                self.pTask.quit()
+                self.pTask.wait()
+                self.pTask = None
+        except:
+            pass
+
+        # Close and delete the profile dialog if it's open
+        if hasattr(self, "pDialog") and self.profileDialog.isVisible():
+            self.profileDialog.close()
+            self.profileDialog.deleteLater()
+            self.profileDialog = None
 
 class CanvasTool(QgsMapToolEmitPoint):
     clicked = pyqtSignal(list)
