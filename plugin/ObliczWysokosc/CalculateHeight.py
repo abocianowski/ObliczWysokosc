@@ -130,31 +130,6 @@ class CalculateHeight:
 
         return action
 
-    def initGui(self):
-        self.first_start = True
-
-        # <div>Icons made by <a href="https://www.flaticon.com/authors/wissawa-khamsriwath" title="Wissawa Khamsriwath">Wissawa Khamsriwath</a> from <a href="https://www.flaticon.com/"             title="Flaticon">www.flaticon.com</a></div>
-        self.captureButton = self.add_action(
-            os.path.join(self.icon_path,'cardinal-points.svg'),
-            'Oblicz wysokość',
-            self.clickGetHeightButton,
-            checkable=True,
-            parent=self.iface.mainWindow(),
-            )
-        self.tool.action = self.captureButton
-
-        # <div>Icons made by <a href="https://www.flaticon.com/authors/wissawa-khamsriwath" title="Wissawa Khamsriwath">Wissawa Khamsriwath</a> from <a href="https://www.flaticon.com/"             title="Flaticon">www.flaticon.com</a></div>
-        self.profleButton = self.add_action(
-            os.path.join(self.icon_path,'line-chart.svg'),
-            'Oblicz spadek terenu',
-            self.clickProfleButon,
-            checkable=False,
-            parent=self.iface.mainWindow(),
-            )
-
-        if self.first_start == True:
-            self.first_start = False
-
     def addMemoryLayer(self, source_layer, sect_length):
         layer_fields = source_layer.fields()
 
@@ -332,6 +307,31 @@ class CalculateHeight:
         self.pDialog.spinBox.setEnabled(False)
         self.pDialog.onlySelected.setEnabled(False)
         self.pDialog.refreshButton.setEnabled(False)
+
+    def initGui(self):
+        self.first_start = True
+
+        # <div>Icons made by <a href="https://www.flaticon.com/authors/wissawa-khamsriwath" title="Wissawa Khamsriwath">Wissawa Khamsriwath</a> from <a href="https://www.flaticon.com/"             title="Flaticon">www.flaticon.com</a></div>
+        self.captureButton = self.add_action(
+            os.path.join(self.icon_path,'cardinal-points.svg'),
+            'Oblicz wysokość',
+            self.clickGetHeightButton,
+            checkable=True,
+            parent=self.iface.mainWindow(),
+            )
+        self.tool.action = self.captureButton
+
+        # <div>Icons made by <a href="https://www.flaticon.com/authors/wissawa-khamsriwath" title="Wissawa Khamsriwath">Wissawa Khamsriwath</a> from <a href="https://www.flaticon.com/"             title="Flaticon">www.flaticon.com</a></div>
+        self.profleButton = self.add_action(
+            os.path.join(self.icon_path,'line-chart.svg'),
+            'Oblicz spadek terenu',
+            self.clickProfleButon,
+            checkable=False,
+            parent=self.iface.mainWindow(),
+            )
+
+        if self.first_start == True:
+            self.first_start = False
 
     def refreshComboBox(self, combo, geometry_type):
         combo.clear()
