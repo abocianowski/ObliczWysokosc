@@ -59,7 +59,7 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QPushButton" name="canel">
+  <widget class="QPushButton" name="cancel">
    <property name="geometry">
     <rect>
      <x>332</x>
@@ -293,7 +293,7 @@ p, li { white-space: pre-wrap; }
     <bool>false</bool>
    </property>
   </widget>
-  <zorder>canel</zorder>
+   <zorder>cancel</zorder>
   <zorder>close</zorder>
   <zorder>textEdit</zorder>
   <zorder>frame</zorder>

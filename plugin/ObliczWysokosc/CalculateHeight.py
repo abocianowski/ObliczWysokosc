@@ -13,12 +13,16 @@
 # ***************************************************************************
 
 import os
-import requests
+from typing import List, Tuple
+
+from qgis.gui import QgsInterface
+
+from .gugik_service import GugikService
 
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QCoreApplication, Qt, pyqtSignal, QThread, QVariant, QSettings
 from PyQt5.QtGui import QIcon
-from PyQt5.QtWidgets import QAction, QMessageBox, QTableWidgetItem, QAbstractItemView, QApplication, QMessageBox
+from PyQt5.QtWidgets import QAction, QApplication, QMessageBox, QTableWidgetItem
 
 from qgis.core import (
     QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsFeature,
@@ -32,8 +36,10 @@ from .resources import *
 LEFT_PANEL, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__),'qt','leftPanel.ui'))
 PROFILE_DIALOG, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__),'qt','calculate_decrease.ui'))
 class CalculateHeight:
-    def __init__(self, iface):
-        self.iface = iface
+    def __init__(self, iface: QgsInterface) -> None:
+        """Initialize plugin with reference to QGIS interface."""
+
+        self.iface: QgsInterface = iface
         self.canvas = iface.mapCanvas()
         self.plugin_dir = os.path.dirname(__file__)
         locale = QSettings().value('locale/userLocale')[0:2]
@@ -54,6 +60,9 @@ class CalculateHeight:
         self.icon_path = ':/plugins/ObliczWysokosc/icons/'
 
         self.qgsProject = QgsProject.instance()
+
+        # service used for fetching height values
+        self.service = GugikService()
 
         self.toolsToolbar = self.iface.addToolBar(u'Oblicz wysokość (GUGiK NMT)')
         self.toolsToolbar.setObjectName(u'Oblicz wysokość (GUGiK NMT)')
@@ -80,10 +89,10 @@ class CalculateHeight:
         self.profileDialog = ProfileDialog(parent=self.iface.mainWindow())
         self.profileDialog.refreshButton.setIcon(QIcon(os.path.join(self.icon_path,'mActionRefresh.svg')))
         self.profileDialog.refreshButton.clicked.connect(lambda: self.refreshComboBox(self.profileDialog.comboBox, 1))
-        self.profileDialog.canel.clicked.connect(self.taskCanceled)
+        self.profileDialog.cancel.clicked.connect(self.taskCanceled)
         self.profileDialog.close.clicked.connect(self.closeDialog)
         self.profileDialog.run.clicked.connect(self.generateProfile)
-        self.profileDialog.canel.setEnabled(False)
+        self.profileDialog.cancel.setEnabled(False)
 
         self.first_start = None
 
@@ -130,7 +139,7 @@ class CalculateHeight:
 
         return action
 
-    def addMemoryLayer(self, source_layer, sect_length):
+    def addMemoryLayer(self, source_layer: QgsVectorLayer, sect_length: str) -> QgsVectorLayer:
         layer_fields = source_layer.fields()
 
         output_layer_name = f'Spadek terenu - {sect_length} - GUGiK NMT'
@@ -162,7 +171,7 @@ class CalculateHeight:
 
         return output_layer
 
-    def addPointToLayer(self, x, y, z):
+    def addPointToLayer(self, x: float, y: float, z: float) -> None:
         x = float(x)
         y = float(y)
         z = float(z)
@@ -194,8 +203,9 @@ class CalculateHeight:
         layer.commitChanges()
         layer.reload()
 
-    def capturePoint(self,point):
-        res = getRequests(point)
+    def capturePoint(self, point: List[float]) -> None:
+        """Handle map click and display retrieved height."""
+        res = self.service.get_height(point)
         if res[0] != False:
             rows = self.panel.tableWidget.rowCount()
             self.panel.tableWidget.setRowCount(rows + 1)
@@ -209,7 +219,7 @@ class CalculateHeight:
         else:
             QMessageBox.warning(None,res[1][0], res[1][1])
     
-    def clearLayer(self):
+    def clearLayer(self) -> None:
         name = 'Obliczone wysokości - GUGiK NMT'
         layers = QgsProject.instance().mapLayersByName(name)
 
@@ -219,14 +229,14 @@ class CalculateHeight:
             layer.dataProvider().truncate()
             self.iface.mapCanvas().refreshAllLayers()
 
-    def clearTable(self):
+    def clearTable(self) -> None:
         self.panel.tableWidget.setRowCount(0)
 
-    def clickProfleButon(self):
+    def clickProfileButton(self) -> None:
         self.profileDialog.show()
         self.refreshComboBox(self.profileDialog.comboBox, 1)
 
-    def clickGetHeightButton(self):
+    def clickGetHeightButton(self) -> None:
         if self.captureButton.isChecked():
             self.canvas.setMapTool(self.tool)
             self.panel.show()
@@ -234,7 +244,7 @@ class CalculateHeight:
             self.canvas.unsetMapTool(self.tool)
             self.panel.hide()
 
-    def closeDialog(self):
+    def closeDialog(self) -> None:
         try:
             if self.pTask.stopTask == False:
                 self.pTask.stopTask = True
@@ -244,11 +254,11 @@ class CalculateHeight:
             pass
 
         self.profileDialog.run.setEnabled(True)
-        self.profileDialog.canel.setEnabled(False)
+        self.profileDialog.cancel.setEnabled(False)
         self.profileDialog.hide()
         self.profileDialog.progressBar.setValue(0)
 
-    def copyToClipboard(self):
+    def copyToClipboard(self) -> None:
         tmp = ''
         for i in range(0,self.panel.tableWidget.rowCount()):
             x = self.panel.tableWidget.item(i,0).text()
@@ -259,7 +269,7 @@ class CalculateHeight:
         clip = QApplication.clipboard()
         clip.setText(tmp)
 
-    def getLayers(self, geometry_type):
+    def getLayers(self, geometry_type: int) -> List[QgsVectorLayer]:
         # 1 = Line layers
         # 2 = Polygon layers
         layers = []
@@ -270,7 +280,7 @@ class CalculateHeight:
                     layers.append(layer)
         return layers
 
-    def generateProfile(self):
+    def generateProfile(self) -> None:
         l_idx = self.profileDialog.comboBox.currentIndex()
 
         if l_idx == 0:
@@ -292,7 +302,12 @@ class CalculateHeight:
 
         self.dest_profile_layer.loadNamedStyle(os.path.join(self.plugin_dir,'layer_style2.qml'), True)
 
-        self.pTask = ProfileTool(layer, self.profileDialog.onlySelected.isChecked(), self.profileDialog.spinBox.value())
+        self.pTask = ProfileTool(
+            layer,
+            self.profileDialog.onlySelected.isChecked(),
+            self.profileDialog.spinBox.value(),
+            self.service,
+        )
                
         self.pTask.progress.connect(self.profileDialog.progressBar.setValue)
         self.pTask.end.connect(self.taskFinished)
@@ -302,13 +317,13 @@ class CalculateHeight:
         self.pTask.start()
         
         self.profileDialog.run.setEnabled(False)
-        self.profileDialog.canel.setEnabled(True)
+        self.profileDialog.cancel.setEnabled(True)
         self.profileDialog.comboBox.setEnabled(False)
         self.profileDialog.spinBox.setEnabled(False)
         self.profileDialog.onlySelected.setEnabled(False)
         self.profileDialog.refreshButton.setEnabled(False)
 
-    def initGui(self):
+    def initGui(self) -> None:
         self.first_start = True
 
         # <div>Icons made by <a href="https://www.flaticon.com/authors/wissawa-khamsriwath" title="Wissawa Khamsriwath">Wissawa Khamsriwath</a> from <a href="https://www.flaticon.com/"             title="Flaticon">www.flaticon.com</a></div>
@@ -322,10 +337,10 @@ class CalculateHeight:
         self.tool.action = self.captureButton
 
         # <div>Icons made by <a href="https://www.flaticon.com/authors/wissawa-khamsriwath" title="Wissawa Khamsriwath">Wissawa Khamsriwath</a> from <a href="https://www.flaticon.com/"             title="Flaticon">www.flaticon.com</a></div>
-        self.profleButton = self.add_action(
+        self.profileButton = self.add_action(
             os.path.join(self.icon_path,'line-chart.svg'),
             'Oblicz spadek terenu',
-            self.clickProfleButon,
+            self.clickProfileButton,
             checkable=False,
             parent=self.iface.mainWindow(),
             )
@@ -333,7 +348,7 @@ class CalculateHeight:
         if self.first_start == True:
             self.first_start = False
 
-    def refreshComboBox(self, combo, geometry_type):
+    def refreshComboBox(self, combo: QtWidgets.QComboBox, geometry_type: int) -> None:
         combo.clear()
         combo.addItem(None)
 
@@ -343,33 +358,33 @@ class CalculateHeight:
             for i in self.lineLayers:
                 combo.addItem(i.name())  
 
-    def taskError(self,e):
-        self.pTask.stopTaks = True
+    def taskError(self, e: List[str]) -> None:
+        self.pTask.stopTask = True
         self.pTask.terminate()
         QMessageBox.warning(None,e[0], e[1])
         self.profileDialog.run.setEnabled(True)
-        self.profileDialog.canel.setEnabled(False)
+        self.profileDialog.cancel.setEnabled(False)
         self.profileDialog.progressBar.setValue(0)
         self.profileDialog.comboBox.setEnabled(True)
         self.profileDialog.spinBox.setEnabled(True)
         self.profileDialog.onlySelected.setEnabled(True)
         self.profileDialog.refreshButton.setEnabled(True)
 
-    def taskCanceled(self):
-        self.pTask.stopTaks = True
+    def taskCanceled(self) -> None:
+        self.pTask.stopTask = True
         self.pTask.terminate()
         QMessageBox.warning(None,'Zatrzymanie procesu', 'Proces generowania spadku terenu został zatrzymany.')
         self.profileDialog.run.setEnabled(True)
-        self.profileDialog.canel.setEnabled(False)
+        self.profileDialog.cancel.setEnabled(False)
         self.profileDialog.progressBar.setValue(0)
         self.profileDialog.comboBox.setEnabled(True)
         self.profileDialog.spinBox.setEnabled(True)
         self.profileDialog.onlySelected.setEnabled(True)
         self.profileDialog.refreshButton.setEnabled(True)
 
-    def taskFinished(self):
+    def taskFinished(self) -> None:
         self.profileDialog.run.setEnabled(True)
-        self.profileDialog.canel.setEnabled(False)
+        self.profileDialog.cancel.setEnabled(False)
         QMessageBox.information(self.iface.mainWindow(),'Spadek terenu', 'Proces generowania został zakończony')
         self.profileDialog.progressBar.setValue(0)
         self.profileDialog.comboBox.setEnabled(True)
@@ -380,12 +395,12 @@ class CalculateHeight:
         self.pTask.quit()
         self.pTask.wait()
 
-    def taskAddFeature(self,feature):
+    def taskAddFeature(self, feature: QgsFeature) -> None:
         self.dest_profile_layer.startEditing()
         self.dest_profile_layer.addFeature(feature)
         self.dest_profile_layer.commitChanges()
 
-    def unload(self):
+    def unload(self) -> None:
         # Unset the map tool if it's currently active
         if self.canvas.mapTool() == self.tool:
             self.canvas.unsetMapTool(self.tool)
@@ -429,17 +444,17 @@ class CanvasTool(QgsMapToolEmitPoint):
     clicked = pyqtSignal(list)
     deact = pyqtSignal()
 
-    def __init__(self, iface, canvas):
+    def __init__(self, iface, canvas) -> None:
         QgsMapToolEmitPoint.__init__(self, canvas)
         self.canvas = canvas
         self.iface = iface
         self.action = None
 
-    def activate(self):
+    def activate(self) -> None:
         self.action.setChecked(True)
         self.setCursor(Qt.CrossCursor)
 
-    def canvasPressEvent(self, e):
+    def canvasPressEvent(self, e) -> None:
         point = self.toMapCoordinates(self.canvas.mouseLastXY())
         point = QgsGeometry.fromPointXY(point)
 
@@ -453,11 +468,13 @@ class CanvasTool(QgsMapToolEmitPoint):
 
         self.clicked.emit([x,y])
 
-    def deactivate(self):
+    def deactivate(self) -> None:
         self.action.setChecked(False)
         self.deact.emit()
 
-    def geometryCrs2Crs(self,geometry, source_crs, destination_crs):
+    def geometryCrs2Crs(
+        self, geometry: QgsGeometry, source_crs: str, destination_crs: str
+    ) -> QgsGeometry:
         geometry = QgsGeometry(geometry)
         src_crs = QgsCoordinateReferenceSystem(source_crs)
         dest_crs = QgsCoordinateReferenceSystem(destination_crs)
@@ -468,16 +485,16 @@ class CanvasTool(QgsMapToolEmitPoint):
 class LeftPanel(QtWidgets.QDockWidget, LEFT_PANEL):
     closingPanel = pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super(LeftPanel, self).__init__(parent)
         self.setupUi(self)
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         self.closingPanel.emit()
         event.accept()
 
 class ProfileDialog(QtWidgets.QDialog, PROFILE_DIALOG):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None) -> None:
         super(ProfileDialog, self).__init__(parent)
         self.setupUi(self)
 
@@ -487,14 +504,16 @@ class ProfileTool(QThread):
     error = pyqtSignal(list)
     add_feature = pyqtSignal(object)
 
-    def __init__(self, source_layer, only_selected, distance):
+    def __init__(self, source_layer: QgsVectorLayer, only_selected: bool, distance: float, service: GugikService):
         QThread.__init__(self)
         self.source_layer = source_layer
         self.only_selected = only_selected
         self.distance = distance
         self.stopTask = False
+        # service instance for height requests
+        self.service = service
     
-    def run(self):    
+    def run(self) -> None:
         f_count = 0
         
         if self.only_selected:
@@ -556,12 +575,13 @@ class ProfileTool(QThread):
 
         self.end.emit()
 
-    def addZvalue(self, geometry):
+    def addZvalue(self, geometry: QgsGeometry) -> Tuple[bool, QgsGeometry]:
+        """Add Z values to vertices of a geometry using online service."""
         geom_list = []
         for v in geometry.vertices():
             x = float(v.x())
             y = float(v.y())
-            z = getRequests([x,y])
+            z = self.service.get_height([x, y])
             if z[0] == False:
                 return False,z[1]
             point = QgsPoint(x, y, float(z[1]))
@@ -570,7 +590,8 @@ class ProfileTool(QThread):
         geom = QgsGeometry.fromPolyline(geom_list)
         return True, geom
 
-    def generateSections(self, geometry, distance):
+    def generateSections(self, geometry: QgsGeometry, distance: float) -> List[QgsGeometry]:
+        """Split geometry into sections of given distance."""
         geom_length = geometry.length()
         vertices = [geometry.lineLocatePoint(QgsGeometry.fromWkt(i.asWkt())) for i in geometry.vertices()]
         geom_list = []
@@ -592,14 +613,3 @@ class ProfileTool(QThread):
             i += distance
         return geom_list
 
-def getRequests(point):
-    url = f'https://services.gugik.gov.pl/nmt/?request=GetHbyXY&x={point[1]}&y={point[0]}'
-    try:
-        req = requests.get(url, timeout=120)
-    except:
-        return False,['Błąd połączenia', 'Upłynął limit czasu oczekiwania na dane lub serwer nie odpowiada']
-
-    if req.status_code == 200:
-        return True, req.text
-    else:
-        return False,['Błąd połączenia', 'Wystąpił błąd podczas pobierania danych. Sprawdź połączenie internetowe']

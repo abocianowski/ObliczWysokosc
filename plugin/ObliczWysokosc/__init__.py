@@ -12,6 +12,9 @@
 #     email                : adrian at bocianowski.com.pl                   *
 # ***************************************************************************
 
-def classFactory(iface):
+from qgis.gui import QgsInterface
+
+
+def classFactory(iface: QgsInterface) -> "CalculateHeight":
     from .CalculateHeight import CalculateHeight
     return CalculateHeight(iface)
