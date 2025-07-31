@@ -58,7 +58,7 @@ class CalculateHeight:
         self.toolsToolbar = self.iface.addToolBar(u'Oblicz wysokość (GUGiK NMT)')
         self.toolsToolbar.setObjectName(u'Oblicz wysokość (GUGiK NMT)')
 
-        self.panel = leftPanel()
+        self.panel = LeftPanel()
         self.iface.addDockWidget(Qt.LeftDockWidgetArea, self.panel)
 
         self.panel.closingPanel.connect(lambda: self.captureButton.setChecked(False))
