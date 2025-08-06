@@ -13,12 +13,12 @@
 # ***************************************************************************
 
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import QMetaType, Qt, pyqtSignal, QThread
+from PyQt5.QtCore import QMetaType, Qt, pyqtSignal, QThread, QVariant
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction, QApplication, QMessageBox, QTableWidgetItem
 
 from qgis.core import (
-    QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsFeature,
+    QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsFeature, Qgis,
     QgsField, QgsGeometry, QgsLayerTreeLayer, QgsMapLayerType, QgsPoint,
     QgsProject, QgsVector3D, QgsVectorLayer
 )
@@ -137,13 +137,13 @@ class CalculateHeight:
         pr = output_layer.dataProvider()
         att = [i for i in layer_fields]
 
-        roznica_z = QgsField('roznica_z', QMetaType.Double)
+        roznica_z = self.makeField("roznica_z", "double")
         att.append(roznica_z)
 
-        dl_3d = QgsField('dlugosc_3d', QMetaType.Double)
+        dl_3d = self.makeField("dlugosc_3d", "double")
         att.append(dl_3d)
 
-        spadek = QgsField('spadek', QMetaType.Double)
+        spadek = self.makeField("spadek", "double")
         att.append(spadek)
 
         pr.addAttributes(att)
@@ -275,7 +275,7 @@ class CalculateHeight:
             return
 
         try:
-            self.dest_profile_layer = self.addMemoryLayer(layer, self.profileDialog.spinBox.value())
+            self.dest_profile_layer = self.addMemoryLayer(layer, int(self.profileDialog.spinBox.value()))
         except:
             QMessageBox.warning(None,'Brakująca warstwa wejściowa', 'Wskazana warstwa wejściowa nie istnieje (prawdopodobnie została usunięta)')
             self.refreshComboBox(self.profileDialog.comboBox, 1)
@@ -303,6 +303,28 @@ class CalculateHeight:
         self.profileDialog.spinBox.setEnabled(False)
         self.profileDialog.onlySelected.setEnabled(False)
         self.profileDialog.refreshButton.setEnabled(False)
+
+    def makeField(self, name: str, type_name: str) -> QgsField:
+        """
+        Create a QgsField depending on the QGIS version.
+        Supports QMetaType from QGIS 3.38+.
+        """
+        if Qgis.QGIS_VERSION_INT >= 33800:
+            # QGIS 3.38+ uses QMetaType
+            type_map = {
+                "int": QMetaType.Int,
+                "double": QMetaType.Double,
+                "string": QMetaType.QString,
+            }
+            return QgsField(name, type_map[type_name], type_name)
+        else:
+            # Older QGIS versions use QVariant.Type
+            type_map = {
+                "int": QVariant.Int,
+                "double": QVariant.Double,
+                "string": QVariant.String,
+            }
+            return QgsField(name, type_map[type_name], type_name)
 
     def initGui(self) -> None:
         self.first_start = True
