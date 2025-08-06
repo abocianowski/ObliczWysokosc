@@ -13,5 +13,5 @@
 # ***************************************************************************
 
 def classFactory(iface):
-    from .CalculateHeight import CalculateHeight
+    from .core.calculate_height import CalculateHeight
     return CalculateHeight(iface)
