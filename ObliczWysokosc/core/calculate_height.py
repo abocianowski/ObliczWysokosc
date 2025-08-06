@@ -13,7 +13,7 @@
 # ***************************************************************************
 
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import Qt, pyqtSignal, QThread, QVariant
+from PyQt5.QtCore import QMetaType, Qt, pyqtSignal, QThread
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction, QApplication, QMessageBox, QTableWidgetItem
 
@@ -120,30 +120,30 @@ class CalculateHeight:
 
         return action
 
-    def addMemoryLayer(self, source_layer: QgsVectorLayer, sect_length: str) -> QgsVectorLayer:
+    def addMemoryLayer(self, source_layer: QgsVectorLayer, sect_length: int) -> QgsVectorLayer:
+        project = QgsProject.instance()
         layer_fields = source_layer.fields()
-
-        output_layer_name = f'Spadek terenu - {sect_length} - GUGiK NMT'
+        output_layer_name = f'Spadek terenu - {sect_length} [m] - GUGiK NMT'
         output_layer = QgsVectorLayer('LineStringZ?crs=epsg:2180', output_layer_name, 'memory')
-        QgsProject.instance().addMapLayer(output_layer, False)
-        layerTree = self.iface.layerTreeCanvasBridge().rootGroup()
+        project.addMapLayer(output_layer, False)
+        layerTree = project.layerTreeRoot()
         layerTree.insertChildNode(0, QgsLayerTreeLayer(output_layer))
-        treeRoot = QgsProject.instance().layerTreeRoot()  
+        treeRoot = project.layerTreeRoot()  
         if treeRoot.hasCustomLayerOrder():
             order = treeRoot.customLayerOrder()
-            order.insert(0, order.pop(order.index(QgsProject.instance().mapLayersByName(output_layer_name)[0])))
+            order.insert(0, order.pop(order.index(project.mapLayersByName(output_layer_name)[0])))
             treeRoot.setCustomLayerOrder(order)
 
         pr = output_layer.dataProvider()
         att = [i for i in layer_fields]
 
-        roznica_z = QgsField('roznica_z', QVariant.Double)
+        roznica_z = QgsField('roznica_z', QMetaType.Double)
         att.append(roznica_z)
 
-        dl_3d = QgsField('dlugosc_3d', QVariant.Double)
+        dl_3d = QgsField('dlugosc_3d', QMetaType.Double)
         att.append(dl_3d)
 
-        spadek = QgsField('spadek', QVariant.Double)
+        spadek = QgsField('spadek', QMetaType.Double)
         att.append(spadek)
 
         pr.addAttributes(att)
@@ -162,7 +162,7 @@ class CalculateHeight:
         if not layers:
             layer = QgsVectorLayer('PointZ?crs=epsg:2180&field=x:double&field=y:double&field=z:double', name, 'memory')
             QgsProject.instance().addMapLayer(layer, False)
-            layerTree = self.iface.layerTreeCanvasBridge().rootGroup()
+            layerTree = QgsProject.instance().layerTreeRoot()
             layerTree.insertChildNode(0, QgsLayerTreeLayer(layer))
 
             treeRoot = QgsProject.instance().layerTreeRoot()  
@@ -275,7 +275,7 @@ class CalculateHeight:
             return
 
         try:
-            self.dest_profile_layer = self.addMemoryLayer(layer, str(self.profileDialog.spinBox.value()) + ' [m]')
+            self.dest_profile_layer = self.addMemoryLayer(layer, self.profileDialog.spinBox.value())
         except:
             QMessageBox.warning(None,'Brakująca warstwa wejściowa', 'Wskazana warstwa wejściowa nie istnieje (prawdopodobnie została usunięta)')
             self.refreshComboBox(self.profileDialog.comboBox, 1)
