@@ -7,10 +7,11 @@
 #   (at your option) any later version.                                     *
 # ***************************************************************************
 #     begin                : 2019-10-28                                     *
-#     copyright            : (C) 2019 by Adrian Bocianowski                 *
+#     updated              : 2025-08-07                                     *
+#     copyright            : (C) 2025 by Adrian Bocianowski                 *
 #     email                : adrian at bocianowski.com.pl                   *
 # ***************************************************************************
 
 def classFactory(iface):
-    from .CalculateHeight import CalculateHeight
+    from .core.calculate_height import CalculateHeight
     return CalculateHeight(iface)
