@@ -1,20 +1,57 @@
 # Oblicz Wysokość
-Wtyczka do programu Qgis umożliwiająca obliczanie wartości Z dla dodanych punktów oraz obliczanie spadów terenu. Dane NMT do analizy pochodzą z serwisu GUGiK.
 
-Narzędzie jest kompatybilne z wersją Qgis'a od 3.8 wzwyż. Wtyczka umożliwia:
-- obliczenie wysokości dla punktów wskazanych w oknie mapy i dodanie wyników do warstwy tymczasowej,
-- zapisywanie przechwyconych wysokości i współrzędnych punktów w dokowalnym widgecie. Dane mogą być skopiowane do schowka przy użyciu narzędzia do kopiowania i wykorzystane w innych aplikacjach,
-- obliczenie spadków terenu dla warstw zawierających obiekty liniowe. Linie zawarte w warstwie zostaną podzielone na sekcje (gęstość przekroju) podane przez użytkownika. Następnie wierzchołki sekcji zostaną wzbogacone o wysokość, dzięki którym obliczone zostaną: spadek terenu, długość 3d i różnica wysokości (punkt początkowy i końcowy).
+**Wtyczka do QGIS** służąca do obliczania wysokości (Z) dla punktów oraz analizowania **spadków terenu** na podstawie danych NMT (Numeryczny Model Terenu) z serwisu GUGiK.
 
-Spadek terenu (sin(α) = Δh/l) jest liczony na podstawie stosunku zmiany wysokości Δh, mierzonej w dwóch punktach sekcji (podzielonego odcinka) , do odległości l między nimi, mierzonej wzdłuż trasy: 
+## Wymagania
 
-<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Grade_dimension.svg/400px-Grade_dimension.svg.png" alt="400px-Grade_dimension.svg">
+- QGIS w wersji **3.8 lub nowszej**
+- Dostęp do internetu (do pobierania danych z API GUGiK)
 
-Wtyczka wykorzystuje API GUGiK dostępne pod adresem: http://services.gugik.gov.pl/nmt/
+## Funkcje
+
+- **Obliczanie wysokości punktów**  
+  - Wskazywanie punktów na mapie i pobieranie dla nich wartości Z  
+  - Dodawanie wyników do **warstwy tymczasowej**
+
+- **Zarządzanie danymi punktów**  
+  - Przechwytywanie współrzędnych i wysokości w **dokowalnym widgecie**  
+  - Możliwość **kopiowania danych do schowka** i wykorzystywania w innych aplikacjach
+
+- **Obliczanie spadków terenu dla linii**  
+  - Linie z warstwy są dzielone na odcinki (gęstość ustawiana przez użytkownika)  
+  - Wierzchołki odcinków są wzbogacane o wysokość  
+  - Obliczane są:
+    - spadek terenu,
+    - długość 3D,
+    - różnica wysokości między początkiem a końcem linii
+
+## Wzór spadku terenu
+
+Spadek obliczany jest ze wzoru:
 
 
-Przykład wykorzystania narzędzia do obliczania punktów:
-<img src="https://github.com/abocianowski/ObliczWysokosc/blob/master/gifs/gif1.gif?raw=true" alt="gif1.gif">
+Gdzie:
+- `Δh` – różnica wysokości między punktami,
+- `l` – długość odcinka (wzdłuż trasy)
 
-Przykład wykorzystania narzędzia do obliczania spadków terenu:
-<img src="https://github.com/abocianowski/ObliczWysokosc/blob/master/gifs/gif2.gif?raw=true" alt="gif2.gif">
+![Wzór spadku terenu](https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Grade_dimension.svg/400px-Grade_dimension.svg.png)
+
+## Dane źródłowe
+
+Wtyczka wykorzystuje API GUGiK:  
+➡️ [http://services.gugik.gov.pl/nmt/](http://services.gugik.gov.pl/nmt/)
+
+## Przykłady działania
+
+### Obliczanie wysokości punktów
+
+![Obliczanie wysokości punktów](https://github.com/abocianowski/ObliczWysokosc/blob/master/gifs/gif1.gif?raw=true)
+
+### Obliczanie spadków terenu
+
+![Obliczanie spadków terenu](https://github.com/abocianowski/ObliczWysokosc/blob/master/gifs/gif2.gif?raw=true)
+
+---
+
+© Autor: Adrian Bocianowski  
+Repozytorium: [ObliczWysokosc](https://github.com/abocianowski/ObliczWysokosc)
