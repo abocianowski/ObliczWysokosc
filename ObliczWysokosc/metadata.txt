@@ -1,42 +1,57 @@
 [general]
 name=Oblicz wysokość (GUGiK NMT)
 qgisMinimumVersion=3.8.0
-description=Oblicza wysokość punktów i spadek terenu na podstawie API GUGiK. EN: Only for Polish users - allows calculating the height using the GUGiK API. The service coverage area is available only within the administrative borders of Poland.
-version=0.6
+description=Oblicza wysokość punktów i spadek terenu na podstawie API GUGiK. EN: For users in Poland only – allows calculating elevation and terrain slope using the GUGiK API. Service coverage is limited to the territory of Poland.
+version=0.7
 author=Adrian Bocianowski
 email=adrian@bocianowski.com.pl
 
 about=PL:
-    Wtyczka dzięki API udostępnionemu przez GUGiK umożliwi:
-    - dodanie punktów z obliczoną wysokością do warstwy tymczasowej
-    - skopiowanie obliczonych wysokości wraz z X, Y do schowka
-    - obliczenie spadków terenu
+    Wtyczka dzięki API udostępnionemu przez GUGiK umożliwia:
+    - dodanie punktów z obliczoną wysokością do warstwy tymczasowej,
+    - skopiowanie obliczonych wysokości wraz z X, Y do schowka,
+    - obliczenie spadków terenu.
+
+    Działa tylko na obszarze administracyjnym Polski.
+
     EN:
-    The plug-in with API provided by GUGiK will allow:
-    - adding points with the calculated height to the temporary layer
-    - copy the calculated heights together with X, Y to the clipboard
-    - calculation of slopes
-    The service coverage area is available only within the administrative borders of Poland.
+    This plugin, using the API provided by GUGiK, allows you to:
+    - add points with calculated elevation to a temporary layer,
+    - copy calculated elevations along with X and Y coordinates to the clipboard,
+    - calculate terrain slopes.'
+
+    The service coverage is limited to the administrative territory of Poland.
 	
 tracker=https://github.com/abocianowski/ObliczWysokosc/issues
 repository=https://github.com/abocianowski/ObliczWysokosc
 
 changelog:
-    version=0.6 (2019-11-25):
-        * bug fixing with no visible layers in combo box on Ubuntu/ naprawa błędu związanego z brakiem widoczności warstw do generowania profilu w Ubuntu
-    version=0.5 (2019-11-19):
-        * repair bug with division by 0/ naprawa błędu z dzieleniem przez 0
-    version=0.4 (2019-11-08):
-        * możliwość dodania skrótu/ the ability to add a shortcut
-    version=0.3 (2019-11-05):
-        * zmiana adresu usługi z http na https/ change of service address from http to https
-    version=0.2 (2019-11-01):
-        * naprawa błędu wystepującego podczas uruchamiania narzędzia do generowania spadków/ repair Qgis crashed before run profile tool
-        * literówka w oknie obliczania spadków/ typo in dialog title name
-    version=0.1 (2019-10-31):
-        * plugin create
+    version=0.7 (2025-08-07):
+        * Added "id" attribute with sequential numbering to the output line layer
+          to allow sorting segments based on the original order of points from the source line.
+          This change was introduced in response to user feedback regarding
+          unwanted automatic sorting by the "length_3d" attribute.
 
-tags=NMT GUGiK API wysokość Z spadek terenu profil
+    version=0.6 (2019-11-25):
+        * Fixed bug causing layers not to appear in the combo box on Ubuntu.
+
+    version=0.5 (2019-11-19):
+        * Fixed division by zero error.
+
+    version=0.4 (2019-11-08):
+        * Added ability to assign a keyboard shortcut.
+
+    version=0.3 (2019-11-05):
+        * Changed service URL from HTTP to HTTPS.
+
+    version=0.2 (2019-11-01):
+        * Fixed bug causing QGIS crash when launching the slope calculation tool.
+        * Corrected a typo in the slope calculation dialog title.
+
+    version=0.1 (2019-10-31):
+        * Initial plugin release.
+
+tags=NMT GUGiK API wysokość Z spadek terenu profil DTM slope terrain profile height data model elevation points
 
 homepage=https://github.com/abocianowski/ObliczWysokosc
 category=Plugins

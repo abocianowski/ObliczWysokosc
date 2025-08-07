@@ -7,7 +7,7 @@
 #   (at your option) any later version.                                     *
 # ***************************************************************************
 #     begin                : 2019-10-28                                     *
-#     updated              : 2025-07-31                                     *
+#     updated              : 2025-08-07                                     *
 #     copyright            : (C) 2025 by Adrian Bocianowski                 *
 #     email                : adrian at bocianowski.com.pl                   *
 # ***************************************************************************
@@ -137,14 +137,16 @@ class CalculateHeight:
         pr = output_layer.dataProvider()
         att = [i for i in layer_fields]
 
-        roznica_z = self.makeField("roznica_z", "double")
-        att.append(roznica_z)
+        fields = [
+            ("id", "int"),
+            ("roznica_z", "double"),
+            ("dlugosc_3d", "double"),
+            ("spadek", "double")
+        ]
 
-        dl_3d = self.makeField("dlugosc_3d", "double")
-        att.append(dl_3d)
-
-        spadek = self.makeField("spadek", "double")
-        att.append(spadek)
+        for f in fields:
+            field = self.makeField(f[0], f[1])
+            att.append(field)
 
         pr.addAttributes(att)
 
@@ -282,7 +284,6 @@ class CalculateHeight:
             return
 
         self.dest_profile_layer.loadNamedStyle(os.path.join(self.plugin_dir,'styles','layer_style2.qml'), True)
-
         self.pTask = ProfileTool(
             layer,
             self.profileDialog.onlySelected.isChecked(),
@@ -303,28 +304,6 @@ class CalculateHeight:
         self.profileDialog.spinBox.setEnabled(False)
         self.profileDialog.onlySelected.setEnabled(False)
         self.profileDialog.refreshButton.setEnabled(False)
-
-    def makeField(self, name: str, type_name: str) -> QgsField:
-        """
-        Create a QgsField depending on the QGIS version.
-        Supports QMetaType from QGIS 3.38+.
-        """
-        if Qgis.QGIS_VERSION_INT >= 33800:
-            # QGIS 3.38+ uses QMetaType
-            type_map = {
-                "int": QMetaType.Int,
-                "double": QMetaType.Double,
-                "string": QMetaType.QString,
-            }
-            return QgsField(name, type_map[type_name], type_name)
-        else:
-            # Older QGIS versions use QVariant.Type
-            type_map = {
-                "int": QVariant.Int,
-                "double": QVariant.Double,
-                "string": QVariant.String,
-            }
-            return QgsField(name, type_map[type_name], type_name)
 
     def initGui(self) -> None:
         self.first_start = True
@@ -351,6 +330,28 @@ class CalculateHeight:
         if self.first_start == True:
             self.first_start = False
 
+    def makeField(self, name: str, type_name: str) -> QgsField:
+        """
+        Create a QgsField depending on the QGIS version.
+        Supports QMetaType from QGIS 3.38+.
+        """
+        if Qgis.QGIS_VERSION_INT >= 33800:
+            # QGIS 3.38+ uses QMetaType
+            type_map = {
+                "int": QMetaType.Int,
+                "double": QMetaType.Double,
+                "string": QMetaType.QString,
+            }
+            return QgsField(name, type_map[type_name], type_name)
+        else:
+            # Older QGIS versions use QVariant.Type
+            type_map = {
+                "int": QVariant.Int,
+                "double": QVariant.Double,
+                "string": QVariant.String,
+            }
+            return QgsField(name, type_map[type_name], type_name)
+
     def refreshComboBox(self, combo: QtWidgets.QComboBox, geometry_type: int) -> None:
         combo.clear()
         combo.addItem(None)
@@ -360,11 +361,16 @@ class CalculateHeight:
         
             for i in self.lineLayers:
                 combo.addItem(i.name())  
+    
+    def taskAddFeature(self, feature: QgsFeature) -> None:
+        self.dest_profile_layer.startEditing()
+        self.dest_profile_layer.addFeature(feature)
+        self.dest_profile_layer.commitChanges()
 
-    def taskError(self, e: List[str]) -> None:
+    def taskCanceled(self) -> None:
         self.pTask.stopTask = True
         self.pTask.terminate()
-        QMessageBox.warning(None,e[0], e[1])
+        QMessageBox.warning(None,'Zatrzymanie procesu', 'Proces generowania spadku terenu został zatrzymany.')
         self.profileDialog.run.setEnabled(True)
         self.profileDialog.cancel.setEnabled(False)
         self.profileDialog.progressBar.setValue(0)
@@ -373,10 +379,10 @@ class CalculateHeight:
         self.profileDialog.onlySelected.setEnabled(True)
         self.profileDialog.refreshButton.setEnabled(True)
 
-    def taskCanceled(self) -> None:
+    def taskError(self, e: List[str]) -> None:
         self.pTask.stopTask = True
         self.pTask.terminate()
-        QMessageBox.warning(None,'Zatrzymanie procesu', 'Proces generowania spadku terenu został zatrzymany.')
+        QMessageBox.warning(None,e[0], e[1])
         self.profileDialog.run.setEnabled(True)
         self.profileDialog.cancel.setEnabled(False)
         self.profileDialog.progressBar.setValue(0)
@@ -397,11 +403,6 @@ class CalculateHeight:
         
         self.pTask.quit()
         self.pTask.wait()
-
-    def taskAddFeature(self, feature: QgsFeature) -> None:
-        self.dest_profile_layer.startEditing()
-        self.dest_profile_layer.addFeature(feature)
-        self.dest_profile_layer.commitChanges()
 
     def unload(self) -> None:
         # Unset the map tool if it's currently active
@@ -527,6 +528,7 @@ class ProfileTool(QThread):
             f_count += self.source_layer.featureCount()
             features = [i for i in self.source_layer.getFeatures()]
         i = 0
+        id = 0
         prg = 0
 
         for f in features:
@@ -548,6 +550,9 @@ class ProfileTool(QThread):
                         feature = QgsFeature()
                         v_lst = [i for i in geom_z[1].vertices()]
 
+                        # id
+                        att.append(id)
+
                         # height difference
                         z_diff= round(abs(v_lst[0].z() - v_lst[-1].z()),2)
                         att.append(z_diff)
@@ -557,11 +562,12 @@ class ProfileTool(QThread):
                         dl_3d = [dl_3d[i].distance(dl_3d[i+1])  for i,e in enumerate(dl_3d[:-1])]
                         dl_3d = round(sum(dl_3d),2)
                         att.append(dl_3d)
+
                         # slope
                         if dl_3d == 0:
                             continue
-                        spadek = round((z_diff/dl_3d) * 100,2)
-                        att.append(spadek)
+                        slope = round((z_diff/dl_3d) * 100,2)
+                        att.append(slope)
                         
                         feature.setAttributes(att)
                         feature.setGeometry(geom_z[1])
@@ -571,6 +577,8 @@ class ProfileTool(QThread):
                         prg2 = ((i2 / part_geom_sections_len / f_count) * 100) + prg
                         if (prg2 - prg) > 1:
                             self.progress.emit(prg2)
+
+                        id += 1
                     else:
                         return
             i += 1
@@ -616,4 +624,3 @@ class ProfileTool(QThread):
             geom_list.append(tmp_geom)
             i += distance
         return geom_list
-

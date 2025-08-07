@@ -1,3 +1,17 @@
+# -*- coding: utf-8 -*-
+
+# ***************************************************************************
+#   This program is free software; you can redistribute it and/or modify    *
+#   it under the terms of the GNU General Public License as published by    *
+#   the Free Software Foundation; either version 2 of the License, or       *
+#   (at your option) any later version.                                     *
+# ***************************************************************************
+#     begin                : 2019-10-28                                     *
+#     updated              : 2025-08-07                                     *
+#     copyright            : (C) 2025 by Adrian Bocianowski                 *
+#     email                : adrian at bocianowski.com.pl                   *
+# ***************************************************************************
+
 import requests
 from typing import List, Tuple, Union
 
