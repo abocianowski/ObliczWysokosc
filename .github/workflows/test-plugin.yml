@@ -14,15 +14,9 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Build Docker image
         run: docker build -t qgis-plugin-test .
 
       - name: Run tests in container
         run: |
-          docker run --rm \
-            -v ${{ github.workspace }}:/plugin \
-            qgis-plugin-test \
-            xvfb-run -a pytest tests
+          docker run --rm -v "${{ github.workspace }}:/plugin" qgis-plugin-test xvfb-run -a pytest tests
